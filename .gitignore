@@ -1,0 +1,47 @@
+/node_modules/
+/build/
+
+node_modules
+.env
+coverage
+coverage.json
+typechain
+
+.idea
+
+#Buidler files
+cache
+artifacts
+coverage
+coverage.json
+
+node_modules
+.env
+coverage
+coverage.json
+typechain
+
+#Hardhat files
+cache
+artifacts
+
+node_modules
+.env
+coverage
+coverage.json
+typechain
+
+#Hardhat files
+cache
+artifacts
+
+node_modules
+.env
+coverage
+coverage.json
+typechain
+
+#Hardhat files
+cache
+artifacts
+/bin/*
