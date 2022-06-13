@@ -113,22 +113,29 @@ contract SlidingWindowOracle {
     // returns the amount out corresponding to the amount in for a given token using the moving average over the time
     // range [now - [windowSize, windowSize - periodSize * 2], now]
     // update must have been called for the bucket corresponding to timestamp `now - windowSize`
-    function consult(address tokenIn, uint amountIn, address tokenOut) external view returns (uint amountOut) {
+    function consult(address tokenIn, uint amountIn, address tokenOut) external view returns (uint amountOut, bool success) {
         address pair = ICapricornFactory(factory).getPair(tokenIn, tokenOut);
         Observation storage firstObservation = getFirstObservationInWindow(pair);
 
         uint timeElapsed = block.timestamp - firstObservation.timestamp;
-        require(timeElapsed <= windowSize, 'SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION');
-        // should never happen.
-        require(timeElapsed >= windowSize - periodSize * 2, 'SlidingWindowOracle: UNEXPECTED_TIME_ELAPSED');
+        // SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION
+        if (timeElapsed > windowSize) {
+            return (0, false);
+        }
+        // SlidingWindowOracle: UNEXPECTED_TIME_ELAPSED
+        if (timeElapsed < windowSize - periodSize * 2) {
+            return (0, false);
+        }
 
         (uint price0Cumulative, uint price1Cumulative,) = CapricornOracleLibrary.currentCumulativePrices(pair);
         (address token0,) = sortTokens(tokenIn, tokenOut);
 
         if (token0 == tokenIn) {
-            return computeAmountOut(firstObservation.price0Cumulative, price0Cumulative, timeElapsed, amountIn);
+            amountOut = computeAmountOut(firstObservation.price0Cumulative, price0Cumulative, timeElapsed, amountIn);
+            return (amountOut, true);
         } else {
-            return computeAmountOut(firstObservation.price1Cumulative, price1Cumulative, timeElapsed, amountIn);
+            amountOut = computeAmountOut(firstObservation.price1Cumulative, price1Cumulative, timeElapsed, amountIn);
+            return (amountOut, true);
         }
     }
 }
