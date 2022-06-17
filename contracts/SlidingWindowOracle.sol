@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.6.6;
+pragma solidity >=0.8.4;
 
 import './interfaces/ICapricornFactory.sol';
 import './interfaces/ICapricornPair.sol';
 
 import './libraries/CapricornOracleLibrary.sol';
-import './libraries//FixedPoint.sol';
+import './libraries/FixedPoint.sol';
 
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 
@@ -42,10 +42,10 @@ contract SlidingWindowOracle {
     mapping(address => Observation[]) public pairObservations;
 
     constructor(address factory_, uint windowSize_, uint8 granularity_) {
-        require(granularity_ > 1, 'SlidingWindowOracle: GRANULARITY');
+        require(granularity_ > 1, 'Granularity less than 1');
         require(
             (periodSize = windowSize_ / granularity_) * granularity_ == windowSize_,
-            'SlidingWindowOracle: WINDOW_NOT_EVENLY_DIVISIBLE'
+            'WindowSize not evenly divisible'
         );
         factory = factory_;
         windowSize = windowSize_;
@@ -61,7 +61,6 @@ contract SlidingWindowOracle {
     // returns the observation from the oldest epoch (at the beginning of the window) relative to the current time
     function getFirstObservationInWindow(address pair) private view returns (Observation storage firstObservation) {
         uint8 observationIndex = observationIndexOf(block.timestamp);
-        // no overflow issue. if observationIndex + 1 overflows, result is still zero.
         uint8 firstObservationIndex = (observationIndex + 1) % granularity;
         firstObservation = pairObservations[pair][firstObservationIndex];
     }
@@ -80,7 +79,7 @@ contract SlidingWindowOracle {
         uint8 observationIndex = observationIndexOf(block.timestamp);
         Observation storage observation = pairObservations[pair][observationIndex];
 
-        // we only want to commit updates once per period (i.e. windowSize / granularity)
+        // only want to commit updates once per period (i.e. windowSize / granularity)
         uint timeElapsed = block.timestamp - observation.timestamp;
         if (timeElapsed > periodSize) {
             (uint price0Cumulative, uint price1Cumulative,) = CapricornOracleLibrary.currentCumulativePrices(pair);
@@ -92,9 +91,9 @@ contract SlidingWindowOracle {
 
     // returns sorted token addresses, used to handle return values from pairs sorted in this order
     function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB, 'CapricornLibrary: IDENTICAL_ADDRESSES');
+        require(tokenA != tokenB, 'Identical Addresses');
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'CapricornLibrary: ZERO_ADDRESS');
+        require(token0 != address(0), 'Zero Address');
     }
 
     // given the cumulative prices of the start and end of a period, and the length of the period, compute the average
@@ -103,7 +102,6 @@ contract SlidingWindowOracle {
         uint priceCumulativeStart, uint priceCumulativeEnd,
         uint timeElapsed, uint amountIn
     ) private pure returns (uint amountOut) {
-        // overflow is desired.
         FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(
             uint224((priceCumulativeEnd - priceCumulativeStart) / timeElapsed)
         );
@@ -118,11 +116,11 @@ contract SlidingWindowOracle {
         Observation storage firstObservation = getFirstObservationInWindow(pair);
 
         uint timeElapsed = block.timestamp - firstObservation.timestamp;
-        // SlidingWindowOracle: MISSING_HISTORICAL_OBSERVATION
+        // Missing Historical Observation
         if (timeElapsed > windowSize) {
             return (0, false);
         }
-        // SlidingWindowOracle: UNEXPECTED_TIME_ELAPSED
+        // Unexpected Time Elapsed
         if (timeElapsed < windowSize - periodSize * 2) {
             return (0, false);
         }
