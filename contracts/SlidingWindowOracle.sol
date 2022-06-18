@@ -120,10 +120,6 @@ contract SlidingWindowOracle {
         if (timeElapsed > windowSize) {
             return (0, false);
         }
-        // Unexpected Time Elapsed
-        if (timeElapsed < windowSize - periodSize * 2) {
-            return (0, false);
-        }
 
         (uint price0Cumulative, uint price1Cumulative,) = CapricornOracleLibrary.currentCumulativePrices(pair);
         (address token0,) = sortTokens(tokenIn, tokenOut);
