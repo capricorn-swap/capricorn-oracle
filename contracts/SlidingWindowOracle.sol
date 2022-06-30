@@ -41,6 +41,9 @@ contract SlidingWindowOracle {
     // mapping from pair address to a list of price observations of that pair
     mapping(address => Observation[]) public pairObservations;
 
+    // mapping from pair address to last update timestamp of that pair
+    mapping(address => uint) public pairLastUpdateTimestamp;
+
     constructor(address factory_, uint windowSize_, uint8 granularity_) {
         require(granularity_ > 1, 'Granularity less than 1');
         require(
@@ -86,6 +89,7 @@ contract SlidingWindowOracle {
             observation.timestamp = block.timestamp;
             observation.price0Cumulative = price0Cumulative;
             observation.price1Cumulative = price1Cumulative;
+            pairLastUpdateTimestamp[pair] = block.timestamp;
         }
     }
 
@@ -143,5 +147,22 @@ contract SlidingWindowOracle {
             amountOut = computeAmountOut(firstObservation.price1Cumulative, price1Cumulative, timeElapsed, amountIn);
             return (amountOut, true);
         }
+    }
+
+    // returns pairs last update timestamp
+    function getLastUpdateTimestamps(address[] calldata tokenAs, address[] calldata tokenBs) external view returns (uint[] memory, bool) {
+        uint256 tokenAsLength = tokenAs.length;
+        uint256 tokenBsLength = tokenBs.length;
+
+        if (tokenAsLength <= 0 || tokenAsLength != tokenBsLength) {
+             return (new uint[](0), false);
+        }
+
+        uint[] memory lastUpdateTimestamps = new uint[](tokenAsLength);
+        for (uint256 i = 0; i < tokenAsLength; i++) {
+            address pair = ICapricornFactory(factory).getPair(tokenAs[i], tokenBs[i]);
+            lastUpdateTimestamps[i] = pairLastUpdateTimestamp[pair];
+        }
+        return (lastUpdateTimestamps, true);
     }
 }
