@@ -46,6 +46,11 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       gasPrice: 5000000000,
     },
+    "cube": {
+      url: "https://http-mainnet-sg.cube.network",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      gasPrice: 200000000000,
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
