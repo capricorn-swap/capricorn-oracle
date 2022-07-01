@@ -18,9 +18,23 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  const SlidingWindowOracle= await ethers.getContractFactory("SlidingWindowOracle");
-  // const contract = await SlidingWindowOracle.deploy("0x7a1eba426aa389aac9b410cdfe3cef5d344e043f", 600, 10);  // 测试生产环境
-  const contract = await SlidingWindowOracle.deploy("0x33CB4150f3ADFCD92fbFA3309823A2a242bF280f", 600, 10);  // 主网生产环境
+  let windowSize = 600
+  let granularity = 10
+  let capricornSwapFactory = ''
+
+  let networkName = process.env['HARDHAT_NETWORK']
+  if (networkName == 'cube') {
+    capricornSwapFactory = '0x33CB4150f3ADFCD92fbFA3309823A2a242bF280f'  // 主网生产环境
+  } else if (networkName == 'cube-testnet') {
+    capricornSwapFactory = '0x7a1eba426aa389aac9b410cdfe3cef5d344e043f'  // 测试生产环境
+  } else {
+    console.error("Not support network:", capricornSwapFactory)
+    return;
+  }
+  console.log("Set swap factory address:", capricornSwapFactory)
+
+  const SlidingWindowOracle = await ethers.getContractFactory("SlidingWindowOracle");
+  const contract = await SlidingWindowOracle.deploy(capricornSwapFactory, windowSize, granularity);
   await contract.deployed();
   console.log("SlidingWindowOracle deployed to:", contract.address);
 }
