@@ -18,11 +18,9 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  // CapricornSwapFactory: 0x7a1eba426aa389aac9b410cdfe3cef5d344e043f
-  // WindowSize: 600 seconds
-  // Granularity_: 10
   const SlidingWindowOracle= await ethers.getContractFactory("SlidingWindowOracle");
-  const contract = await SlidingWindowOracle.deploy("0x7a1eba426aa389aac9b410cdfe3cef5d344e043f", 600, 10);
+  // const contract = await SlidingWindowOracle.deploy("0x7a1eba426aa389aac9b410cdfe3cef5d344e043f", 600, 10);  // 测试生产环境
+  const contract = await SlidingWindowOracle.deploy("0x33CB4150f3ADFCD92fbFA3309823A2a242bF280f", 600, 10);  // 主网生产环境
   await contract.deployed();
   console.log("SlidingWindowOracle deployed to:", contract.address);
 }
