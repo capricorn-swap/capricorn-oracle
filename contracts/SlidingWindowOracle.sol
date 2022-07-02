@@ -129,7 +129,17 @@ contract SlidingWindowOracle {
     // update must have been called for the bucket corresponding to timestamp `now - windowSize`
     function consult(address tokenIn, uint amountIn, address tokenOut) external view returns (uint amountOut, bool success) {
         address pair = ICapricornFactory(factory).getPair(tokenIn, tokenOut);
+        if (pair == address(0)) {
+            return (0, false);
+        }
+        if (pairLastUpdateTimestamp[pair] == 0) {
+            return (0, false);
+        }
+
         Observation storage firstObservation = getFirstObservationInWindow(pair);
+        if (firstObservation.timestamp == 0) {
+            return (0, false);
+        }
 
         uint timeElapsed = block.timestamp - firstObservation.timestamp;
         // Missing Historical Observation

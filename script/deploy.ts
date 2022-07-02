@@ -26,7 +26,7 @@ async function main() {
   if (networkName == 'cube') {
     capricornSwapFactory = '0x33CB4150f3ADFCD92fbFA3309823A2a242bF280f'  // 主网生产环境
   } else if (networkName == 'cube-testnet') {
-    capricornSwapFactory = '0x7a1eba426aa389aac9b410cdfe3cef5d344e043f'  // 测试生产环境
+    capricornSwapFactory = '0x7A1Eba426aA389AAC9B410cDFe3cEF5D344E043f'  // 测试生产环境
   } else {
     console.error("Not support network:", capricornSwapFactory)
     return;
