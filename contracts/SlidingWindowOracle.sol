@@ -127,12 +127,16 @@ contract SlidingWindowOracle {
     // returns the amount out corresponding to the amount in for a given token using the moving average over the time
     // range [now - [windowSize, windowSize - periodSize * 2], now]
     // update must have been called for the bucket corresponding to timestamp `now - windowSize`
-    function consult(address tokenIn, uint amountIn, address tokenOut) external view returns (uint amountOut, bool success) {
+    function consult(address tokenIn, uint amountIn, address tokenOut) public view returns (uint, bool) {
         address pair = ICapricornFactory(factory).getPair(tokenIn, tokenOut);
         if (pair == address(0)) {
             return (0, false);
         }
         if (pairLastUpdateTimestamp[pair] == 0) {
+            return (0, false);
+        }
+
+        if (amountIn <= 0) {
             return (0, false);
         }
 
@@ -150,6 +154,7 @@ contract SlidingWindowOracle {
         (uint price0Cumulative, uint price1Cumulative,) = CapricornOracleLibrary.currentCumulativePrices(pair);
         (address token0,) = sortTokens(tokenIn, tokenOut);
 
+        uint amountOut;
         if (token0 == tokenIn) {
             amountOut = computeAmountOut(firstObservation.price0Cumulative, price0Cumulative, timeElapsed, amountIn);
             return (amountOut, true);
@@ -159,17 +164,60 @@ contract SlidingWindowOracle {
         }
     }
 
+    // returns amount out for multi tokens
+    function consultTokens(address[] calldata tokenIns, uint[] calldata  amountIns, address[] calldata tokenOuts) external view returns (uint[] memory, bool) {
+        uint tokenInsLength = tokenIns.length;
+        uint tokenOutsLength = tokenOuts.length;
+        uint amountInsLength = amountIns.length;
+
+        if (tokenInsLength <= 0 || tokenInsLength != tokenOutsLength || tokenInsLength != amountInsLength) {
+            return (new uint[](0), false);
+        }
+
+        uint[] memory amountOuts = new uint[](tokenInsLength);
+        for (uint i = 0; i < tokenInsLength; i++) {
+            (uint amountOut, bool success) = consult(tokenIns[i], amountIns[i], tokenOuts[i]);
+            if (success) {
+                amountOuts[i] = amountOut;
+            } else {
+                return (new uint[](0), false);
+            }
+        }
+        return (amountOuts, true);
+    }
+
+    // returns amount out with multi Paths
+    function consultPaths(address[] calldata tokenIns, uint amountIn, address[] calldata tokenOuts) external view returns (uint, bool) {
+        uint tokenInsLength = tokenIns.length;
+        uint tokenOutsLength = tokenOuts.length;
+
+        if (tokenInsLength <= 0 || tokenInsLength != tokenOutsLength) {
+            return (0, false);
+        }
+
+        uint amountOut;
+        for (uint i = 0; i < tokenInsLength; i++) {
+            bool success;
+            (amountOut, success) = consult(tokenIns[i], amountIn, tokenOuts[i]);
+            if (!success) {
+                return (0, false);
+            }
+            amountIn = amountOut;
+        }
+        return (amountOut, true);
+    }
+
     // returns pairs last update timestamp
     function getLastUpdateTimestamps(address[] calldata tokenAs, address[] calldata tokenBs) external view returns (uint[] memory, bool) {
-        uint256 tokenAsLength = tokenAs.length;
-        uint256 tokenBsLength = tokenBs.length;
+        uint tokenAsLength = tokenAs.length;
+        uint tokenBsLength = tokenBs.length;
 
         if (tokenAsLength <= 0 || tokenAsLength != tokenBsLength) {
              return (new uint[](0), false);
         }
 
         uint[] memory lastUpdateTimestamps = new uint[](tokenAsLength);
-        for (uint256 i = 0; i < tokenAsLength; i++) {
+        for (uint i = 0; i < tokenAsLength; i++) {
             address pair = ICapricornFactory(factory).getPair(tokenAs[i], tokenBs[i]);
             lastUpdateTimestamps[i] = pairLastUpdateTimestamp[pair];
         }
